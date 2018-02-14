@@ -11,12 +11,15 @@ import android.widget.Toast;
 
 import com.androidsrc.headlessfragment.HeadlessFragment.TaskStatusCallback;
 
+import org.json.JSONObject;
+
 public class MainActivity extends Activity implements TaskStatusCallback,
 		OnClickListener {
 
 	private HeadlessFragment mFragment;
 	private ProgressBar mProgressBar;
 	private TextView mProgressvalue;
+	public TextView resultR;
 
 	/**
 	 * Called when activity is starting. Most initialization part is done here.
@@ -28,11 +31,14 @@ public class MainActivity extends Activity implements TaskStatusCallback,
 
 		mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
 		mProgressvalue = (TextView) findViewById(R.id.progressValue);
+		resultR = (TextView) findViewById(R.id.result);
 
 		if (savedInstanceState != null) {
 			int progress = savedInstanceState.getInt("progress_value");
 			mProgressvalue.setText(progress + "%");
 			mProgressBar.setProgress(progress);
+			if(!HeadlessFragment.pd.isShowing() && HeadlessFragment.isTaskExecuting){
+				HeadlessFragment.pd.show();}
 		}
 
 		FragmentManager mMgr = getFragmentManager();
@@ -61,16 +67,19 @@ public class MainActivity extends Activity implements TaskStatusCallback,
 
 	@Override
 	public void onPreExecute() {
+
 		Toast.makeText(getApplicationContext(), "onPreExecute",
 				Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
-	public void onPostExecute() {
+	public void onPostExecute(JSONObject result) {
 		Toast.makeText(getApplicationContext(), "onPostExecute",
 				Toast.LENGTH_SHORT).show();
 		if (mFragment != null)
 			mFragment.updateExecutingStatus(false);
+
+		resultR.setText(result.toString());
 	}
 
 	@Override
@@ -82,6 +91,7 @@ public class MainActivity extends Activity implements TaskStatusCallback,
 
 	@Override
 	public void onProgressUpdate(int progress) {
+
 		mProgressvalue.setText(progress + "%");
 		mProgressBar.setProgress(progress);
 	}

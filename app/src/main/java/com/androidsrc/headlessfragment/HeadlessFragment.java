@@ -2,26 +2,50 @@ package com.androidsrc.headlessfragment;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
+
+import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class HeadlessFragment extends Fragment {
 	
 	public static final String TAG_HEADLESS_FRAGMENT = "headless_fragment";
+
+	private JSONObject jsonObject = null;
+
+	public static  ProgressDialog pd;
+
+
 
 	public static interface TaskStatusCallback {
 		void onPreExecute();
 
 		void onProgressUpdate(int progress);
 
-		void onPostExecute();
+		void onPostExecute(JSONObject result);
 
 		void onCancelled();
 	}
 	
 	TaskStatusCallback mStatusCallback;
 	BackgroundTask mBackgroundTask;
-	boolean isTaskExecuting = false;
+	public static  boolean isTaskExecuting = false;
 	
 	/**
 	 * Called when a fragment is first attached to its activity. 
@@ -31,6 +55,12 @@ public class HeadlessFragment extends Fragment {
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		mStatusCallback = (TaskStatusCallback)activity;
+		pd=null;
+		pd = new ProgressDialog(activity);
+		pd.setTitle("Loading...");
+		pd.setMessage("Please Wait...");
+
+
 	}
 	
 	/**
@@ -45,27 +75,31 @@ public class HeadlessFragment extends Fragment {
 		setRetainInstance(true);
 	}
 	
-	/**
-	 * Called when the fragment is no longer attached to its activity. This is called after onDestroy().
-	 */
+
 	@Override
 	public void onDetach() {
 		// TODO Auto-generated method stub
 		super.onDetach();
+		pd.dismiss();
+		pd=null;
 		mStatusCallback = null;
 	}
 
-	private class BackgroundTask extends AsyncTask<Void, Integer, Void> {
+	private class BackgroundTask extends AsyncTask<Void, Integer, JSONObject> {
 
 		@Override
 		protected void onPreExecute() {
+
+			if(!pd.isShowing()){
+				pd.show();}
+
 			if(mStatusCallback != null)
 				mStatusCallback.onPreExecute();
 		}
 		
 		@Override
-		protected Void doInBackground(Void... params) {
-			int progress = 0;
+		protected JSONObject doInBackground(Void... params) {
+		/*	int progress = 0;
 			while(progress < 100 && !isCancelled()){
 				progress++;
 				publishProgress(progress);
@@ -76,13 +110,40 @@ public class HeadlessFragment extends Fragment {
 					e.printStackTrace();
 				}
 			}
-			return null;
+			return null;*/
+
+
+			return getJSONFromURL("http://apicpt.ibbtrade.com/dealer/api/dealer/getpastbidsundernegotiation", jsonMake());
+		}
+
+		public  JSONObject jsonMake() {
+			JSONObject jObj = new JSONObject();
+			try {
+
+				jObj.put("dealer_id", "68");
+				jObj.put("trackid","MOB_ZGVHBGVYMJNFZGVS5A84130BC4147");
+				jObj.put("referid","");
+
+				jObj.put("mobtime","16:15 PM");
+				jObj.put("simno","348570932");
+				jObj.put("ip","184.66.84.228");
+
+
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+
+			return jObj;
 		}
 
 		@Override
-		protected void onPostExecute(Void result) {
-			if(mStatusCallback != null)
-				mStatusCallback.onPostExecute();
+		protected void onPostExecute(JSONObject result) {
+
+			if(mStatusCallback != null){
+				pd.dismiss();
+				mStatusCallback.onPostExecute(result);
+
+			}
 		}
 
 		@Override
@@ -92,7 +153,7 @@ public class HeadlessFragment extends Fragment {
 		}
 
 		@Override
-		protected void onCancelled(Void result) {
+		protected void onCancelled(JSONObject result) {
 			if(mStatusCallback != null)
 				mStatusCallback.onCancelled();
 		}
@@ -118,4 +179,65 @@ public class HeadlessFragment extends Fragment {
 		this.isTaskExecuting = isExecuting;
 	}
 
+
+
+	private JSONObject getJSONFromURL(String strURL, JSONObject jObj) {
+		try {
+
+			Log.e("URL is -->> ", strURL);
+			Log.e("data sending is -->> ", jObj.toString());
+
+			RequestQueue queue = Volley.newRequestQueue((Context) mStatusCallback);
+
+			final JsonObjectRequest jsObjRequest = new JsonObjectRequest(
+					Request.Method.POST, strURL, jObj,
+					new Response.Listener<JSONObject>() {
+						@Override
+						public void onResponse(JSONObject response) {
+							jsonObject = response;
+							 Log.e(" check the response here ---------------->>>> ", jsonObject.toString());
+						}
+					}, new Response.ErrorListener() {
+
+				@Override
+				public void onErrorResponse(VolleyError error) {
+					jsonObject = null;
+				}
+
+			}) {
+
+				@Override
+				public Map<String, String> getHeaders() throws AuthFailureError {
+					HashMap<String, String> headers = new HashMap<String, String>();
+					headers.put("Accept", "application/json; charset=utf-8");
+					headers.put("Content-Type", "application/json; charset=utf-8");
+					return headers;
+				}
+			};
+
+			jsObjRequest.setRetryPolicy(new DefaultRetryPolicy(
+					20000,
+					DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+					DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+			queue.add(jsObjRequest);
+			int i = 0, n = 1;
+			do {
+
+				// if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+				// Log.e(" EXCEPTION","EXCEPTION");
+				// }
+
+				if (jsonObject != null) {
+					n = 0;
+				}
+			} while (i != n);
+			return jsonObject;
+
+		} catch (Exception ex) {
+			// Log.e(" EXCEPTION here -->> ", ex.toString());
+			return jsonObject;
+			//return getJSONFromURL(strURL, jObj.toString());
+		}
+
+	}
 }

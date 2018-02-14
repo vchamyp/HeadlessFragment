@@ -68,4 +68,13 @@
         android:gravity="center"
         android:text="Tap to recreate activity" />
 
+    <TextView
+        android:id="@+id/result"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:maxLength="120"
+        android:gravity="center"
+        android:text="Result" />
+
 </LinearLayout>
