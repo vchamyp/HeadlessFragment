@@ -17,7 +17,6 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -113,25 +112,12 @@ public class HeadlessFragment extends Fragment {
 			return null;*/
 
 
-			return getJSONFromURL("http://apicpt.ibbtrade.com/dealer/api/dealer/getpastbidsundernegotiation", jsonMake());
+			return getJSONFromURL("URL", jsonMake());
 		}
 
 		public  JSONObject jsonMake() {
 			JSONObject jObj = new JSONObject();
-			try {
 
-				jObj.put("dealer_id", "68");
-				jObj.put("trackid","MOB_ZGVHBGVYMJNFZGVS5A84130BC4147");
-				jObj.put("referid","");
-
-				jObj.put("mobtime","16:15 PM");
-				jObj.put("simno","348570932");
-				jObj.put("ip","184.66.84.228");
-
-
-			} catch (JSONException e) {
-				e.printStackTrace();
-			}
 
 			return jObj;
 		}
